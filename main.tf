@@ -36,24 +36,38 @@ module r53_resolver_endpoint {
   public_dns_ip = "8.8.8.8"
 }
 
+#Create The Resolver Rules on Infra Account
 module r53_resolver_rule {
   providers = { aws = aws.dev }
   source = "./modules/r53_resolver_rule"
   resolver_endpoint_id = module.r53_resolver_endpoint.resolver_endpoint_id
   rules = [
-    { rule_name   = "rule1"
+    { 
+      rule_name   = "abc-foo"
       domain_name = "abc.foo."
       ram_name    = "ram-rule1"
-      vpc_ids     = local.vpc_ids
+      vpc_ids     = []
       target_ip   = "8.8.8.8"
       sharing_rules_with  = local.account_ids
     },
-    { rule_name   = "rule2"
+    { 
+      rule_name   = "bar-foo"
       domain_name = "bar.foo."
       ram_name    = "ram-rule2"
-      vpc_ids     = local.vpc_ids
+      vpc_ids     = []
       target_ip   = "8.8.8.8"
       sharing_rules_with  = local.account_ids
     }
   ]
 }
+
+#Looking for the shared rules on Customer Account
+data "aws_route53_resolver_rules" "example" {
+  provider     = aws.dev2
+  rule_type    = "FORWARD"
+  share_status = "SHARED_WITH_ME"
+  depends_on   = [module.r53_resolver_rule.ram_resource_association] 
+}
+
+# Associate the rules on Customer Account
+
