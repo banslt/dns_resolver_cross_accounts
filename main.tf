@@ -45,15 +45,15 @@ module r53_resolver_rule {
     { 
       rule_name   = "abc-foo"
       domain_name = "abc.foo."
-      ram_name    = "ram-rule1"
-      vpc_ids     = []
+      ram_name    = "ram-abc-foo"
+      vpc_ids     = local.vpc_ids
       target_ip   = "8.8.8.8"
       sharing_rules_with  = local.account_ids
     },
     { 
       rule_name   = "bar-foo"
       domain_name = "bar.foo."
-      ram_name    = "ram-rule2"
+      ram_name    = "ram-bar-foo"
       vpc_ids     = []
       target_ip   = "8.8.8.8"
       sharing_rules_with  = local.account_ids
@@ -62,12 +62,35 @@ module r53_resolver_rule {
 }
 
 #Looking for the shared rules on Customer Account
-data "aws_route53_resolver_rules" "example" {
+data "aws_route53_resolver_rules" "shared_rule_list" {
   provider     = aws.dev2
   rule_type    = "FORWARD"
   share_status = "SHARED_WITH_ME"
   depends_on   = [module.r53_resolver_rule.ram_resource_association] 
 }
 
-# Associate the rules on Customer Account
+data "aws_route53_resolver_rule" "shared_rule" {
+  count        = length(data.aws_route53_resolver_rules.shared_rule_list)
+  provider     = aws.dev2
+  resolver_rule_id = element(data.aws_route53_resolver_rules.shared_rule_list.*.id,count.index)
+}
 
+# Associate the rules on Customer Account
+module r53_receiver_associate {
+  source = "./modules/r53_receiver_associate"
+  providers = { aws = aws.dev2 }
+  sharedfwd_public_rule_ids = data.aws_route53_resolver_rules.shared_rule_list.*.id
+  sharedfwd_public_rule_domain_names = data.aws_route53_resolver_rule.shared_rule.*.domain_name
+  rules = [
+    { 
+      rule_name   = "abc-foo"
+      domain_name = "abc.foo."
+      vpc_ids     = local.vpc_ids
+    },
+    { 
+      rule_name   = "bar-foo"
+      domain_name = "bar.foo."
+      vpc_ids     = []
+    }
+  ]
+}

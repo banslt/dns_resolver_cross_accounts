@@ -13,10 +13,12 @@ resource "aws_route53_resolver_rule" "fwd_public_rule" {
 
 resource "aws_route53_resolver_rule_association" "r53_rule_association" {
     count            = length(local.vpcs_associations)
+    # we need to remove the last "." here because domain_name 
+    # is not stored with last "." in rule for some reason...
     resolver_rule_id = element(aws_route53_resolver_rule.fwd_public_rule.*.id,
         index(aws_route53_resolver_rule.fwd_public_rule.*.domain_name, 
-              lookup(element(local.vpcs_associations, count.index),
-              "domain_name")
+              trimsuffix(lookup(element(local.vpcs_associations, count.index),
+              "domain_name"),".")
     ))
     vpc_id = lookup(element(local.vpcs_associations, count.index), "vpc_id")
     depends_on = [aws_route53_resolver_rule.fwd_public_rule]
