@@ -5,9 +5,13 @@ resource "aws_route53_resolver_endpoint" "resolver_endpoint" {
     security_group_ids = [
         aws_security_group.resolver_endpoint_sg.id
     ]
+    # Need at least 2 ip_adress blocks
+    ip_address {
+        subnet_id = var.resolver_subnet_id[0]
+    }
 
     ip_address {
-        subnet_id = var.resolver_subnet_id
+        subnet_id = var.resolver_subnet_id[1]
     }
 }
 

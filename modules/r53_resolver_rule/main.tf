@@ -27,7 +27,7 @@ resource "aws_route53_resolver_rule_association" "r53_rule_association" {
 resource "aws_ram_resource_share" "rule_share" {
   count                     = length(local.rules)
   name                      = lookup(element(local.rules, count.index), "ram_name")
-  allow_external_principals = false
+  allow_external_principals = true
 }
 
 resource "aws_ram_principal_association" "rule_ram_principal_assoc" {

@@ -1,6 +1,6 @@
 variable resolver_subnet_id {
-  type        = string
-  description = "resolver subnet ID"
+  type        = list
+  description = "resolver subnet IDs"
 }
 
 variable resolver_endpoint_vpc_id {
