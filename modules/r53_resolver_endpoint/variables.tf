@@ -1,4 +1,4 @@
-variable resolver_subnet_id {
+variable resolver_subnet_ids {
   type        = list
   description = "resolver subnet IDs"
 }

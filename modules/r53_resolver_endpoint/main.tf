@@ -1,5 +1,6 @@
 resource "aws_route53_resolver_endpoint" "resolver_endpoint" {
     direction = "OUTBOUND"
+    name = "sre3053"
     tags = var.tags
 
     security_group_ids = [
@@ -7,16 +8,16 @@ resource "aws_route53_resolver_endpoint" "resolver_endpoint" {
     ]
     # Need at least 2 ip_adress blocks
     ip_address {
-        subnet_id = var.resolver_subnet_id[0]
+        subnet_id = var.resolver_subnet_ids[0]
     }
 
     ip_address {
-        subnet_id = var.resolver_subnet_id[1]
+        subnet_id = var.resolver_subnet_ids[1]
     }
 }
 
 resource "aws_security_group" "resolver_endpoint_sg" {
-  name_prefix = "r53-endpoint-"
+  name_prefix = "sre3053-r53-endpoint-"
   vpc_id      = var.resolver_endpoint_vpc_id
 
   lifecycle {

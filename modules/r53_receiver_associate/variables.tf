@@ -1,6 +1,6 @@
-variable rules {
+variable rules_assoc {
   default     = []
-  description = "resolver rules"
+  description = "resolver rules assoc"
   type        = list
 }
 

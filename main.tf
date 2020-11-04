@@ -1,29 +1,11 @@
-provider "aws" {
-    region = "us-east-1"
-    alias = "dev"
-    profile = local.cross_account_profile_name
-    assume_role {
-        role_arn = local.aws_dev_devops_std_role
-        session_name = local.session_name
-    }
-}
+#################
+# Terraform v0.13 
+#################
 
-provider "aws" {
-    region = "us-east-1"
-    alias = "dev2"
-    profile = local.cross_account_profile_name
-    assume_role {
-        role_arn = local.aws_dev2_devops_std_role
-        session_name = local.session_name
-    }
-}
-
-#Create a VPC dedicated for the Resolver Endpoint on Infra Account
-module vpc {
-  providers = { aws = aws.dev }
-  source = "./modules/vpc"
-  tags  = local.tags
-  cidr_block = "172.22.0.0/26"
+#Retrieve subnets from VPC dedicated for the Resolver Endpoint on Infra Account
+data "aws_subnet_ids" "subnet_dns_ids" {
+  provider = aws.dev
+  vpc_id = local.vpc_dns_id
 }
 
 #Create the Resolver Endpoint on Infra Account
@@ -31,8 +13,8 @@ module r53_resolver_endpoint {
   providers = { aws = aws.dev }
   source = "./modules/r53_resolver_endpoint"
   tags  = local.tags
-  resolver_subnet_id = module.vpc.subnet_ids
-  resolver_endpoint_vpc_id = module.vpc.vpc_id 
+  resolver_subnet_ids = data.aws_subnet_ids.subnet_dns_ids.ids
+  resolver_endpoint_vpc_id = local.vpc_dns_id
   public_dns_ip = "8.8.8.8" #for sec gp
 }
 
@@ -62,27 +44,20 @@ module r53_resolver_rule {
   ]
 }
 
-#Looking for the shared rules on a Customer Account
-data "aws_route53_resolver_rules" "shared_rule_list" {
-  provider     = aws.dev2
-  rule_type    = "FORWARD"
-  share_status = "SHARED_WITH_ME"
-  depends_on   = [module.r53_resolver_rule.ram_resource_association] 
-}
-
-data "aws_route53_resolver_rule" "shared_rule" {
-  count            = length(data.aws_route53_resolver_rules.shared_rule_list.resolver_rule_ids)
-  provider         = aws.dev2
-  resolver_rule_id = element(sort(data.aws_route53_resolver_rules.shared_rule_list.resolver_rule_ids),count.index)
+module r53_rules_fetch {
+  source = "./modules/r53_rules_fetch"
+  providers = { aws = aws.dev2 }
+  ram_assoc = module.r53_resolver_rule.ram_resource_association
+  pending_rams = module.r53_resolver_rule.pending_rams
 }
 
 # Associate the shared rules on a Customer Account
 module r53_receiver_associate {
   source = "./modules/r53_receiver_associate"
   providers = { aws = aws.dev2 }
-  sharedfwd_public_rule_ids = data.aws_route53_resolver_rule.shared_rule.*.resolver_rule_id
-  sharedfwd_public_rule_domain_names = data.aws_route53_resolver_rule.shared_rule.*.domain_name
-  rules = [
+  sharedfwd_public_rule_ids = module.r53_rules_fetch.sharedfwd_public_rule_ids
+  sharedfwd_public_rule_domain_names = module.r53_rules_fetch.sharedfwd_public_rule_domain_names
+  rules_assoc = [
     local.rule_1_dev2_assoc
     # { 
     #   rule_name   = "abc-foo"

@@ -14,7 +14,7 @@ locals {
     #Allowing us to perform nested loops for associations.
 
     vpcs_associations = flatten([
-        for rule in var.rules : [
+        for rule in var.rules_assoc : [
             for vpc in lookup(rule, "vpc_ids") : {
                 vpc_id      = vpc
                 domain_name = lookup(rule, "domain_name")
