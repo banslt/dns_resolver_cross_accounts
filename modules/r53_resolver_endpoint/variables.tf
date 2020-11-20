@@ -14,7 +14,13 @@ variable tags {
   type        = map(string)
 }
 
-variable public_dns_ip {
+variable allow_outbound_ip {
   type        = string
-  description = "description"
+  description = "outbound IP range SecGrp for Endpoint"
+}
+
+variable direction {
+  type        = string
+  default     = "OUTBOUND"
+  description = "Endpoint Direction"
 }

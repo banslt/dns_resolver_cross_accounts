@@ -13,4 +13,3 @@ variable sharedfwd_public_rule_domain_names {
   description = "shared rule domain names"
   type = list
 }
-
